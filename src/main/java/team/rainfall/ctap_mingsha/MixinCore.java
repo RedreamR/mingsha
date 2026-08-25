@@ -5,18 +5,97 @@ import age.of.civilizations2.jakowski.lukasz.CFG;
 import age.of.civilizations2.jakowski.lukasz.GameCalendar;
 import age.of.civilizations2.jakowski.lukasz.Images;
 import age.of.civilizations2.jakowski.lukasz.Civilization;
+import age.of.civilizations2.jakowski.lukasz.Files.FileManager;
+import age.of.civilizations2.jakowski.lukasz.Province;
+import age.of.civilizations2.jakowski.lukasz.Province_GameData2;
 import age.of.civilizations2.jakowski.lukasz.War_GameData;
 import age.of.civilizations2.jakowski.lukasz.Core.Core;
+import com.badlogic.gdx.files.FileHandle;
 import age.of.civilizations2.jakowski.lukasz.MenuE_HoverP.*;
 import team.rainfall.finality.luminosity2.annotations.Getter;
 import team.rainfall.finality.luminosity2.annotations.Mixin;
 import team.rainfall.finality.luminosity2.annotations.Setter;
 import team.rainfall.finality.luminosity2.annotations.Shadow;
+import team.rainfall.finality.FinalityLogger;
+import team.rainfall.mingsha.ProvincePack;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 @Mixin(mixinClass = "age.of.civilizations2.jakowski.lukasz.Core.Core")
 public class MixinCore {
+    @Shadow
+    private List<Province> lProvs = null;
+    private static boolean missingProvinceWarningLogged;
+    private static String provincePackStatusPath;
+    private static boolean provincePackHitLogged;
+
+    /** Load province data from the Mingsha pack, then fall back to legacy files. */
+    public final void loadProvince(int provinceId) {
+        String base = "map/" + CFG.map.getFileActiveMapPath() + "data/";
+        try {
+            FileHandle pack = FileManager.loadFile(base + "provinces.pack");
+            if (pack.exists() && !pack.path().equals(provincePackStatusPath)) {
+                provincePackStatusPath = pack.path();
+                provincePackHitLogged = false;
+                FinalityLogger.info("[Mingsha] Province pack found: " + pack.path());
+            }
+            byte[] bytes = ProvincePack.read(pack, provinceId);
+            if (bytes != null) {
+                if (!provincePackHitLogged) {
+                    provincePackHitLogged = true;
+                    FinalityLogger.info("[Mingsha] Province pack hit: " + pack.path()
+                            + " (province " + provinceId + ")");
+                }
+                lProvs.add(new Province(provinceId, (Province_GameData2) CFG.deserialize(bytes)));
+                return;
+            }
+        } catch (Exception ex) {
+            FinalityLogger.error("[Mingsha] Province pack read failed; falling back to files", ex);
+            // A corrupt or incompatible pack must not make old maps unloadable.
+            if (CFG.LOGs && !missingProvinceWarningLogged) {
+                missingProvinceWarningLogged = true;
+                CFG.exceptionStack(ex);
+            }
+        }
+
+        try {
+            FileHandle file = FileManager.loadFile(base + "provinces/" + provinceId);
+            lProvs.add(new Province(provinceId, (Province_GameData2) CFG.deserialize(file.readBytes())));
+            return;
+        } catch (Exception fileError) {
+            // Keep the original game's recovery path for maps that retain update/<id>.
+            try {
+                FileHandle update = FileManager.loadFile("map/" + CFG.map.getFileActiveMapPath() + "update/" + provinceId);
+                String[] parts = update.readString().split(";");
+                if (parts.length >= 2) {
+                    String[] xs = parts[0].split(",");
+                    String[] ys = parts[1].split(",");
+                    if (xs.length != ys.length || xs.length == 0) {
+                        throw new IOException("Invalid update province point data");
+                    }
+                    List<Short> pointsX = new ArrayList<>();
+                    List<Short> pointsY = new ArrayList<>();
+                    for (int i = 0; i < xs.length; i++) {
+                        pointsX.add((short) Integer.parseInt(xs[i].trim()));
+                        pointsY.add((short) Integer.parseInt(ys[i].trim()));
+                    }
+                    lProvs.add(new Province(provinceId, new Province_GameData2(-1, pointsX, pointsY, null,
+                            new ArrayList<>(), new ArrayList<>())));
+                    return;
+                }
+            } catch (Exception updateError) {
+                if (CFG.LOGs && !missingProvinceWarningLogged) {
+                    missingProvinceWarningLogged = true;
+                    CFG.exceptionStack(updateError);
+                }
+            }
+            if (CFG.LOGs && !missingProvinceWarningLogged) {
+                missingProvinceWarningLogged = true;
+                CFG.exceptionStack(fileError);
+            }
+        }
+    }
     @Shadow
     private List<War_GameData> lWars = null;
     @Getter(fieldName = "lWars")

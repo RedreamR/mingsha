@@ -8,6 +8,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.utils.GdxRuntimeException;
 import team.rainfall.finality.FinalityLogger;
+import team.rainfall.mingsha.config.MingshaConfig;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -18,7 +19,6 @@ import static age.of.civilizations2.jakowski.lukasz.CFG.exceptionStack;
 public final class Event_Outcome_Leader extends Event_Outcome {
     private static final long serialVersionUID = -7549812752549347218L;
     private int iCivID = -1;
-    public static final boolean X_ORIGINAL_VIEW_OP = false;
     private LeaderOfCiv_GameData data = new LeaderOfCiv_GameData();
     @Override
     public int getCivID() {
@@ -56,7 +56,7 @@ public final class Event_Outcome_Leader extends Event_Outcome {
                 if(CFG.menus.getInGame_Civ_Info_Diplomacy().getVisibleM()){
                     CFG.menus.rebuildInGame_Civ_Info_Diplomacy();
                 }
-                if(X_ORIGINAL_VIEW_OP){
+                if(MingshaConfig.isRefreshLeaderView()){
                 //if (CFG.viewsManager.getActiveViewID() == ViewsManager.VIEW_DIPLOMACY_MODE) {
                     if (CFG.core.getCiv(CFG.getActiveCivInfoId()).civGD.leaderData != null && !CFG.core.getCiv(CFG.getActiveCivInfoId()).civGD.leaderData.getImage().isEmpty()) {
                         CFG.menus.getInGame_CivInfo().getMenuElement(4).setVisible(true);

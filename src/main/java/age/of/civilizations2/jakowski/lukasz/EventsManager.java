@@ -74,17 +74,47 @@ public class EventsManager {
     }
 
     public final boolean checkConditionsAndTryRunMission(int i, int civID) {
-        for(int j = 0; j < ((Event_GameData)this.events.lEvents.get(i)).lTriggers.size(); ++j) {
-            if (((Event_Trigger)((Event_GameData)this.events.lEvents.get(i)).lTriggers.get(j)).triggerType == Event_Type.OR && ((Event_Trigger)((Event_GameData)this.events.lEvents.get(i)).lTriggers.get(j)).getTriggerOut()) {
+        return this.evaluateMissionTriggers(i, false);
+    }
+
+    public final boolean canDisplayMissionID(int i, int civID) {
+        try {
+            if (!((Event_GameData)this.events.lEvents.get(i)).isMission) {
+                return false;
+            }
+
+            if (((Event_GameData)this.events.lEvents.get(i)).getWasFired() && !((Event_GameData)this.events.lEvents.get(i)).getRepeatable()) {
                 return true;
             }
+
+            return this.evaluateMissionTriggers(i, true);
+        } catch (Exception ex) {
+            CFG.exceptionStack(ex);
+            return true;
+        }
+    }
+
+    private final boolean evaluateMissionTriggers(int i, boolean displayConditions) {
+        boolean hasAny = false;
+
+        for(int j = 0; j < ((Event_GameData)this.events.lEvents.get(i)).lTriggers.size(); ++j) {
+            if (((Event_Trigger)((Event_GameData)this.events.lEvents.get(i)).lTriggers.get(j)).isDisplayCondition == displayConditions) {
+                hasAny = true;
+                if (((Event_Trigger)((Event_GameData)this.events.lEvents.get(i)).lTriggers.get(j)).triggerType == Event_Type.OR && ((Event_Trigger)((Event_GameData)this.events.lEvents.get(i)).lTriggers.get(j)).getTriggerOut()) {
+                    return true;
+                }
+            }
+        }
+
+        if (!hasAny) {
+            return displayConditions;
         }
 
         boolean canRunEvent = true;
         boolean checked = false;
 
         for(int j = 0; j < ((Event_GameData)this.events.lEvents.get(i)).lTriggers.size(); ++j) {
-            if (((Event_Trigger)((Event_GameData)this.events.lEvents.get(i)).lTriggers.get(j)).triggerType != Event_Type.OR) {
+            if (((Event_Trigger)((Event_GameData)this.events.lEvents.get(i)).lTriggers.get(j)).isDisplayCondition == displayConditions && ((Event_Trigger)((Event_GameData)this.events.lEvents.get(i)).lTriggers.get(j)).triggerType != Event_Type.OR) {
                 if (((Event_Trigger)((Event_GameData)this.events.lEvents.get(i)).lTriggers.get(j)).triggerType == Event_Type.AND) {
                     if (!((Event_Trigger)((Event_GameData)this.events.lEvents.get(i)).lTriggers.get(j)).getTriggerOut()) {
                         canRunEvent = false;
@@ -111,6 +141,14 @@ public class EventsManager {
     }
 
     public final void checkConditionsAndTryRun(int i) {
+        if (((Event_GameData)this.events.lEvents.get(i)).isMission) {
+            if (this.evaluateMissionTriggers(i, true) && this.evaluateMissionTriggers(i, false)) {
+                this.try_RunEvent(i);
+            }
+
+            return;
+        }
+
         boolean canRunEvent = false;
 
         for(int j = 0; j < ((Event_GameData)this.events.lEvents.get(i)).lTriggers.size(); ++j) {
@@ -349,6 +387,10 @@ public class EventsManager {
         } else {
             return tType == Event_Type.OR ? CFG.lang.get("OR") : CFG.lang.get("NOT");
         }
+    }
+
+    public final String getTriggerRoleText(Event_Trigger tTrigger) {
+        return (tTrigger.isDisplayCondition ? "\u663e\u793a" : "\u89e6\u53d1") + " " + this.getEventTypeText(tTrigger.triggerType);
     }
 
     public final void selectCivAction(int nCivID) {

@@ -2,6 +2,8 @@ package team.rainfall.ctap_mingsha;
 
 import age.of.civilizations2.jakowski.lukasz.Files.FileManager;
 import age.of.civilizations2.jakowski.lukasz.GameValues.GameValues;
+import age.of.civilizations2.jakowski.lukasz.IMGManager;
+import age.of.civilizations2.jakowski.lukasz.Images;
 import age.of.civilizations2.jakowski.lukasz.Renderer;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
@@ -9,10 +11,125 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.utils.GdxRuntimeException;
 import team.rainfall.finality.luminosity2.annotations.Mixin;
+import team.rainfall.mingsha.HOI4Loading;
+import team.rainfall.mingsha.config.MingshaConfig;
 
 import static age.of.civilizations2.jakowski.lukasz.CFG.*;
 @Mixin(mixinClass = "age.of.civilizations2.jakowski.lukasz.CFG")
 public class MixinCFG {
+
+    public static void drLOA(SpriteBatch oSB, int nPosX, int nPosY, int nWidth, int nHeight, float nProgress) {
+        drLOA(oSB, nPosX, nPosY, nWidth, nHeight, nProgress, "");
+    }
+
+    public static void drLOA(SpriteBatch oSB, int nPosX, int nPosY, int nWidth, int nHeight, float nProgress, String extraText) {
+        float clamped = Math.min(1.0F, Math.max(0.0F, nProgress));
+        if (MingshaConfig.isHoi4LoadingEnabled()) {
+            HOI4Loading.draw(oSB, clamped, sLoading + " " + (int)(clamped * 100.0F) + "%" + extraText);
+        } else {
+            drLOAVanilla(oSB, nPosX, nPosY, nWidth, nHeight, clamped, extraText);
+        }
+    }
+
+    /** 原版 AoH2DE 加载条，作为 HOI4 风格加载动画被关闭时的回退。 */
+    private static void drLOAVanilla(SpriteBatch oSB, int nPosX, int nPosY, int nWidth, int nHeight, float nProgress, String extraText) {
+        if (nProgress > 1.0F) {
+            nProgress = 1.0F;
+        } else if (nProgress < 0.0F) {
+            nProgress = 0.0F;
+        }
+
+        if (System.currentTimeMillis() - 2500L > loaTM) {
+            try {
+                sLOATXT = lang.getLOA("L" + oR.nextInt(lang.iLNOT)) + "..";
+                loaTM = System.currentTimeMillis();
+                glyphLay.setText(fontMain.get(FONT_BOLD), sLOATXT);
+                iLOADW = (int) glyphLay.width;
+                iLOAH = (int) glyphLay.height;
+            } catch (Exception var9) {
+                exceptionStack(var9);
+            }
+        }
+
+        if (PRT == 0L) {
+            PRT = System.currentTimeMillis();
+        }
+
+        if (System.currentTimeMillis() < PRT + 6500L) {
+            int tH = TEXT_HEIGHT_DEFAULT * 3 + PADD * 8;
+            int tY = GAMEHEIGHT / 2 - tH / 2;
+            oSB.setColor(new Color(0.0F, 0.0F, 0.0F, 0.2F));
+            IMGManager.getIMG(Images.pix255).draw(oSB, 0, tY, GAMEWIDTH, tH);
+            oSB.setColor(new Color(0.0F, 0.0F, 0.0F, 0.2F));
+            IMGManager.getIMG(Images.line32Off1).draw(oSB, 0, tY, GAMEWIDTH, tH);
+            oSB.setColor(new Color(0.0F, 0.0F, 0.0F, 0.6F));
+            IMGManager.getIMG(Images.gradient).draw(oSB, 0, tY, GAMEWIDTH, PADD);
+            IMGManager.getIMG(Images.gradient).draw(oSB, 0, tY + tH - PADD, GAMEWIDTH, PADD, false, true);
+            oSB.setColor(new Color(COLOR_CREATE_NEW_GAME_BOX_PLAYERS.r, COLOR_CREATE_NEW_GAME_BOX_PLAYERS.g, COLOR_CREATE_NEW_GAME_BOX_PLAYERS.b, 0.85F));
+            IMGManager.getIMG(Images.pix255).draw(oSB, 0, tY + 1, GAMEWIDTH, 1);
+            IMGManager.getIMG(Images.pix255).draw(oSB, 0, tY + tH - 2, GAMEWIDTH, 1);
+            oSB.setColor(0.0F, 0.0F, 0.0F, 0.325F);
+            IMGManager.getIMG(Images.pix255).draw(oSB, 0, tY, GAMEWIDTH, 1);
+            IMGManager.getIMG(Images.pix255).draw(oSB, 0, tY + tH - 1, GAMEWIDTH, 1);
+            oSB.setColor(Color.WHITE);
+            drawTextDefault(oSB, gLG(), GAMEWIDTH / 2 - iJGW / 2, tY + PADD * 2 + PADD / 2, COLOR_HOVER_TITLE);
+            drawTextDefault(oSB, "presents", GAMEWIDTH / 2 - iJGPW / 2, tY + TEXT_HEIGHT_DEFAULT + PADD * 3 + PADD / 2, COLOR_HOVER_TITLE);
+            drawTextDefault(
+                oSB,
+                "Age of History 2: Definitive Edition",
+                GAMEWIDTH / 2 - iDXW / 2,
+                tY + TEXT_HEIGHT_DEFAULT * 2 + PADD * 5 + PADD / 2,
+                COLOR_TEXT_NUM_OF_PROVINCES
+            );
+            oSB.setColor(Color.WHITE);
+        }
+
+        oSB.setColor(new Color(0.0F, 0.0F, 0.0F, 0.2F));
+        IMGManager.getIMG(Images.gradientXY).draw(oSB, nPosX, nPosY - PADD, nWidth, PADD);
+        IMGManager.getIMG(Images.gradientXY).draw(oSB, nPosX, nPosY + nHeight, nWidth, PADD, false, true);
+        oSB.setColor(new Color(0.0F, 0.0F, 0.0F, 0.35F));
+        Renderer.drawBox2(oSB, Images.statsRectBG, nPosX, nPosY, nWidth, nHeight, 1.0F);
+        oSB.setColor(new Color(0.0F, 0.0F, 0.0F, 0.35F));
+        Renderer.drawBox2(oSB, Images.statsRectBG, nPosX + 3, nPosY + 3, (int)((float)(nWidth - 6) * nProgress), nHeight - 6, 1.0F);
+        oSB.setColor(new Color(COLOR_CREATE_NEW_GAME_BOX_PLAYERS.r, COLOR_CREATE_NEW_GAME_BOX_PLAYERS.g, COLOR_CREATE_NEW_GAME_BOX_PLAYERS.b, 0.85F));
+        Renderer.drawBox2(oSB, Images.statsRectBGBorder, nPosX + 1, nPosY + 1, nWidth - 2, nHeight - 2, 1.0F);
+        oSB.setColor(Color.WHITE);
+        Renderer.drawTextWithShadow(
+            oSB,
+            FONT_BOLD,
+            sLOATXT,
+            nPosX + nWidth / 2 - iLOADW / 2,
+            nPosY + (nHeight - iLOAH) / 2,
+            new Color(COLOR_HOVER_TITLE.r, COLOR_HOVER_TITLE.g, COLOR_HOVER_TITLE.b, 1.0F)
+        );
+        Renderer.drawTextWithShadow(
+            oSB,
+            FONT_REGULAR_SMALL,
+            sLoading + " " + (int)(nProgress * 100.0F) + "%" + extraText,
+            nPosX + PADD * 2,
+            nPosY - PADD - TEXT_HEIGHT_DEFAULT_SMALL,
+            new Color(COLOR_HOVER_TITLE.r, COLOR_HOVER_TITLE.g, COLOR_HOVER_TITLE.b, 1.0F)
+        );
+        oSB.setColor(new Color(1.0F, 1.0F, 1.0F, 0.35F));
+        IMGManager.getIMG(Images.gameLogo)
+            .draw2O(
+                oSB,
+                nPosX + nWidth - PADD * 2 - IMGManager.getIMG(Images.gameLogo).getWidth(),
+                nPosY - PADD * 2 - IMGManager.getIMG(Images.gameLogo).getHeight() * 2,
+                IMGManager.getIMG(Images.gameLogo).getWidth(),
+                IMGManager.getIMG(Images.gameLogo).getHeight()
+            );
+        oSB.setColor(Color.WHITE);
+        IMGManager.getIMG(Images.gameLogo)
+            .draw2O(
+                oSB,
+                nPosX + nWidth - PADD * 2 - IMGManager.getIMG(Images.gameLogo).getWidth(),
+                nPosY - PADD * 2 - IMGManager.getIMG(Images.gameLogo).getHeight() * 2,
+                (int)((float)IMGManager.getIMG(Images.gameLogo).getWidth() * nProgress),
+                IMGManager.getIMG(Images.gameLogo).getHeight()
+            );
+        oSB.setColor(Color.WHITE);
+    }
 
     public static final void drawVersionLB(SpriteBatch oSB, int iTranslateX) {
         Renderer.drawText(oSB, FONT_REGULAR_SMALL, "Mingsha AoH2DE by Team Rainfall", PADD + iTranslateX, GAMEHEIGHT - PADD * 2 - TEXT_HEIGHT_DEFAULT_SMALL * 2, new Color(1.0F, 1.0F, 1.0F, 0.25F));

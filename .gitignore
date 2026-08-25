@@ -43,3 +43,11 @@ bin/
 ### Mac OS ###
 .DS_Store
 libs/game.jar
+
+### Local scratch / decompiler output ###
+*.bak
+/tmp-*
+/decompiled_reference.zip
+
+# UI assets are not tracked in the repo
+/src/main/resources/UI/

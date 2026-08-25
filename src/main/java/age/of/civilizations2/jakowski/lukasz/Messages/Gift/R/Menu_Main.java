@@ -33,17 +33,16 @@ import age.of.civilizations2.jakowski.lukasz.Menus.Colonization.Menu_MM;
 import age.of.civilizations2.jakowski.lukasz.TextB.Text;
 import age.of.civilizations2.jakowski.lukasz.TextB.Sparks.SparksAnimation;
 import age.of.civilizations2.jakowski.lukasz.Title.TitleM;
-import age.of.civilizations2.jakowski.lukasz.MenuProxy;
 import age.of.civilizations2.jakowski.lukasz.Z_Other.DialogType;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import team.rainfall.demp.Menu_Multi;
-import team.rainfall.demp.Menu_MultiTitle;
 import team.rainfall.finality.FinalityLogger;
 
 import java.time.LocalDate;
 import java.time.MonthDay;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -59,7 +58,9 @@ public class Menu_Main extends Menu {
     public static int GLGO = 0;
     public static boolean SPECIAL_1 = false;
     public static boolean SPECIAL_2 = false;
-    public static MenuProxy multiMenuProxy = new MenuProxy();
+    /** Optional multiplayer integration supplied by the separate DEMP plugin. */
+    public static Object multiMenuProxy;
+    private static boolean multiplayerUnavailableLogged = false;
     public List<FSF> sF = new ArrayList();
 
     public static final int getMenuPosX_Default() {
@@ -721,13 +722,7 @@ public class Menu_Main extends Menu {
                 CFG.setDialogType(DialogType.GO_TO_LINK);
                 return;
             case 13:
-                if (!multiMenuProxy.isRegistered()) {
-                    multiMenuProxy.registerTopLevel(new Menu_MultiTitle());
-                    multiMenuProxy.register(multiMenuProxy.getViewID(), new Menu_Multi());
-                    multiMenuProxy.setOrderOfMenuID();
-                    Menu_Multi.multiMenuProxy = multiMenuProxy;
-                }
-                multiMenuProxy.switchToWithoutAnim();
+                openOptionalMultiplayerMenu();
                 return;
         }
 
@@ -749,6 +744,69 @@ public class Menu_Main extends Menu {
     }
 
     public void menuAction2() {
+    }
+
+    /** Resolve the optional multiplayer plugin only when its classes are installed. */
+    private static void openOptionalMultiplayerMenu() {
+        try {
+            Class<?> proxyType = Class.forName("age.of.civilizations2.jakowski.lukasz.MenuProxy");
+            if (multiMenuProxy == null || !proxyType.isInstance(multiMenuProxy)) {
+                multiMenuProxy = proxyType.getDeclaredConstructor().newInstance();
+            }
+            boolean registered = ((Boolean)invokeCompatible(multiMenuProxy, "isRegistered")).booleanValue();
+            if (!registered) {
+                Class<?> titleType = Class.forName("team.rainfall.demp.Menu_MultiTitle");
+                Class<?> menuType = Class.forName("team.rainfall.demp.Menu_Multi");
+                invokeCompatible(multiMenuProxy, "registerTopLevel", titleType.getDeclaredConstructor().newInstance());
+                Object viewID = invokeCompatible(multiMenuProxy, "getViewID");
+                invokeCompatible(multiMenuProxy, "register", viewID, menuType.getDeclaredConstructor().newInstance());
+                invokeCompatible(multiMenuProxy, "setOrderOfMenuID");
+                Field proxyField = menuType.getDeclaredField("multiMenuProxy");
+                proxyField.setAccessible(true);
+                proxyField.set(null, multiMenuProxy);
+            }
+            invokeCompatible(multiMenuProxy, "switchToWithoutAnim");
+        } catch (ClassNotFoundException ex) {
+            if (!multiplayerUnavailableLogged) {
+                multiplayerUnavailableLogged = true;
+                FinalityLogger.warn("Optional DEMP multiplayer plugin is not installed; multiplayer menu is unavailable.");
+            }
+        } catch (Throwable ex) {
+            FinalityLogger.error("Failed to open optional multiplayer menu", ex);
+        }
+    }
+
+    private static Object invokeCompatible(Object target, String methodName, Object... args) throws Exception {
+        for (Method method : target.getClass().getMethods()) {
+            Class<?>[] types = method.getParameterTypes();
+            if (!method.getName().equals(methodName) || types.length != args.length) {
+                continue;
+            }
+            boolean compatible = true;
+            for (int i = 0; i < types.length; i++) {
+                if (args[i] != null && !wrap(types[i]).isInstance(args[i])) {
+                    compatible = false;
+                    break;
+                }
+            }
+            if (compatible) {
+                return method.invoke(target, args);
+            }
+        }
+        throw new NoSuchMethodException(methodName);
+    }
+
+    private static Class<?> wrap(Class<?> type) {
+        if (!type.isPrimitive()) return type;
+        if (type == Integer.TYPE) return Integer.class;
+        if (type == Boolean.TYPE) return Boolean.class;
+        if (type == Long.TYPE) return Long.class;
+        if (type == Float.TYPE) return Float.class;
+        if (type == Double.TYPE) return Double.class;
+        if (type == Short.TYPE) return Short.class;
+        if (type == Byte.TYPE) return Byte.class;
+        if (type == Character.TYPE) return Character.class;
+        return type;
     }
 
     public class FSF {

@@ -8,10 +8,13 @@
   "tweakClasses": [
     "team.rainfall.ctap_mingsha.MixinMapBG",
     "team.rainfall.ctap_mingsha.MixinCFG",
+    "team.rainfall.ctap_mingsha.MixinDataScenarioInfo",
     "team.rainfall.ctap_mingsha.MixinGameCalendar",
     "team.rainfall.ctap_mingsha.MixinCore",
+    "team.rainfall.ctap_mingsha.MixinProvince",
     "team.rainfall.ctap_mingsha.MixinTouchManager",
-    "team.rainfall.mingsha.MixinGame_Scenarios"
+    "team.rainfall.mingsha.MixinGame_Scenarios",
+    "team.rainfall.mingsha.sound.MixinSFXManager"
   ]
 
 }

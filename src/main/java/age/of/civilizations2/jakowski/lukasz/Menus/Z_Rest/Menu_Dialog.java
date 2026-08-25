@@ -18,13 +18,13 @@ import age.of.civilizations2.jakowski.lukasz.TextB.Texts.TextScrollable;
 import age.of.civilizations2.jakowski.lukasz.Title.TitleM;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import team.rainfall.mingsha.config.MingshaConfig;
 import team.rainfall.mingsha.utils.AnimationUtil;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class Menu_Dialog extends Menu {
-    public static final boolean NEW_ANIMATION = true;
     private int iBackgroundAlpha = 5;
     private int animationStepID = 0;
     private long sinceTime = -1;
@@ -143,7 +143,7 @@ public class Menu_Dialog extends Menu {
     }
 
     private final void updateChangePosY() {
-        if (NEW_ANIMATION) {
+        if (MingshaConfig.isNewDialogAnimation()) {
             if (this.closeMenu && this.animationStepID == 13) {
                 this.animationChangePosY = CFG.GAMEHEIGHT / 2 + CFG.BUTTON_H;
                 this.setVisibleM(false);

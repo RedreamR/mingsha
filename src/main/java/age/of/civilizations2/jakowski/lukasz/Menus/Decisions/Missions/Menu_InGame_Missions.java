@@ -63,7 +63,7 @@ public class Menu_InGame_Missions extends Menu {
                     try {
                         if (!CFG.eventsManager.events.lEvents.get(CFG.core.getCiv(nCivID).iDMAS.get(i)).getRepeatable() && CFG.eventsManager.events.lEvents.get(CFG.core.getCiv(nCivID).iDMAS.get(i)).getWasFired()) {
                             ++completed;
-                        } else {
+                        } else if (CFG.eventsManager.canDisplayMissionID(CFG.core.getCiv(nCivID).iDMAS.get(i), CFG.core.getPlayer(CFG.PLAYER_TURN_ID).getCivId())) {
                             menuElements.add(new Button_DiplomacyAction_TextRight(Images.diploMessage, CFG.lang.get(CFG.eventsManager.events.lEvents.get(CFG.core.getCiv(nCivID).iDMAS.get(i)).getEventName()), 0, 0, tY, CFG.BUTTON_W, tempElemH, true, "", CFG.eventsManager.canRunMissionID(CFG.core.getCiv(nCivID).iDMAS.get(i), CFG.core.getPlayer(CFG.PLAYER_TURN_ID).getCivId()) ? Images.iconTrue : Images.iconFalse) {
                                 public int id = 0;
 
@@ -219,8 +219,22 @@ public class Menu_InGame_Missions extends Menu {
             CFG.exceptionStack(exr);
         }
 
+        int shownMissions = 0;
+
+        try {
+            for(int i = 0, iSize = CFG.core.getCiv(nCivID).iDMAS.size(); i < iSize; ++i) {
+                if (!CFG.eventsManager.events.lEvents.get(CFG.core.getCiv(nCivID).iDMAS.get(i)).getRepeatable() && CFG.eventsManager.events.lEvents.get(CFG.core.getCiv(nCivID).iDMAS.get(i)).getWasFired()) {
+                    ++shownMissions;
+                } else if (CFG.eventsManager.canDisplayMissionID(CFG.core.getCiv(nCivID).iDMAS.get(i), CFG.core.getPlayer(CFG.PLAYER_TURN_ID).getCivId())) {
+                    ++shownMissions;
+                }
+            }
+        } catch (Exception ex) {
+            CFG.exceptionStack(ex);
+        }
+
         int tempMenuPosY = IMGManager.getIMG(Images.topBar).getHeight() + CFG.PADD * 2 + CFG.BUTTON_H * 3 / 4;
-        this.initMenu(new TitleM_TextSmall(CFG.lang.get("Missions") + ": " + CFG.getNumberWthSpaces("" + CFG.core.getCiv(nCivID).iDMAS.size()), CFG.BUTTON_H * 3 / 4, true, true) {
+        this.initMenu(new TitleM_TextSmall(CFG.lang.get("Missions") + ": " + CFG.getNumberWthSpaces("" + shownMissions), CFG.BUTTON_H * 3 / 4, true, true) {
             public void drawT(SpriteBatch oSB, int iTranslateX, int nPosX, int nPosY, int nWidth, boolean sliderMenuIsActive) {
                 IMGManager.getIMG(Images.dialog_title).draw2O(oSB, nPosX - 2 - Core.PADDING + iTranslateX, nPosY - this.getHeightT() - IMGManager.getIMG(Images.dialog_title).getHeight() - Core.PADDING, nWidth + Core.PADDING * 2 + 4 - IMGManager.getIMG(Images.dialog_title).getWidth(), this.getHeightT() + Core.PADDING);
                 IMGManager.getIMG(Images.dialog_title).draw2O(oSB, nPosX + nWidth + Core.PADDING + 2 - IMGManager.getIMG(Images.dialog_title).getWidth() + iTranslateX, nPosY - this.getHeightT() - Core.PADDING - IMGManager.getIMG(Images.dialog_title).getHeight(), IMGManager.getIMG(Images.dialog_title).getWidth(), this.getHeightT() + Core.PADDING, true, false);
