@@ -27,6 +27,7 @@ import com.badlogic.gdx.graphics.Texture.TextureFilter;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.GdxRuntimeException;
 import team.rainfall.mingsha.counter.CounterStore;
+import team.rainfall.mingsha.ns.NSStore;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -74,8 +75,11 @@ public class Menu_InGame_Event2 extends Menu {
          && CFG.eventsManager.getEvent(Menu_InGame_Event.EVENT_ID).getEvent_PopUp().sText.length() > 0) {
          menuElements.add(
             new Text_Desc(
-               CounterStore.formatDesc(
-                  CFG.lang.get(CFG.eventsManager.getEvent(Menu_InGame_Event.EVENT_ID).getEvent_PopUp().sText),
+               NSStore.formatDesc(
+                  CounterStore.formatDesc(
+                     CFG.lang.get(CFG.eventsManager.getEvent(Menu_InGame_Event.EVENT_ID).getEvent_PopUp().sText),
+                     CFG.eventsManager.getEvent(Menu_InGame_Event.EVENT_ID).getCivID()
+                  ),
                   CFG.eventsManager.getEvent(Menu_InGame_Event.EVENT_ID).getCivID()
                ),
                EventTemplatesMGR.eventTemplates.get(TLID).descPosX,

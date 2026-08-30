@@ -12,6 +12,7 @@ import com.badlogic.gdx.graphics.Texture.TextureWrap;
 import team.rainfall.finality.FinalityLogger;
 import team.rainfall.finality.luminosity2.annotations.Mixin;
 import team.rainfall.finality.luminosity2.annotations.Shadow;
+import team.rainfall.mingsha.PackLocator;
 import team.rainfall.mingsha.ProvincePack;
 
 /** Loads Mingsha's indexed CIM texture pack before the original per-file path. */
@@ -23,8 +24,7 @@ public class MixinProvince {
     private int iContinentID;
     @Shadow
     private Image provBG;
-    private static String texturePackStatusPath;
-    private static boolean texturePackHitLogged;
+    private static boolean texturePackErrorLogged;
 
     public final void loadProvinceBG() {
         if ((!GameValues.gvInGame.LOAD_SEA_PROVINCES_IMAGES || !CFG.getIsDesktop()) && getSeaProv()) {
@@ -35,31 +35,25 @@ public class MixinProvince {
         int scale = this.iContinentID == CFG.map.getMapContinents().getOceanContinentID()
                 ? 1 : CFG.map.getMpB().getMapScale_PreExtra();
         String base = "map/" + CFG.map.getFileActiveMapPath() + "data/scales/provinces/";
-        String texturePackPath = base + "provinces.pack";
-        try {
-            FileHandle texturePack = FileManager.loadFile(texturePackPath);
-            if (texturePack.exists() && !texturePack.path().equals(texturePackStatusPath)) {
-                texturePackStatusPath = texturePack.path();
-                texturePackHitLogged = false;
-                FinalityLogger.info("[Mingsha] Texture pack found: " + texturePack.path());
-            }
-            byte[] bytes = ProvincePack.readTexture(texturePack, scale, this.iProvinceID);
-            if (bytes != null) {
-                Pixmap pixmap = ProvincePack.readCim(bytes);
-                try {
-                    this.provBG = new Image(new Texture(pixmap), TextureFilter.Nearest, TextureWrap.ClampToEdge);
-                } finally {
-                    pixmap.dispose();
+        FileHandle texturePack = PackLocator.find(base + "provinces.pack");
+        if (texturePack != null) {
+            try {
+                byte[] bytes = ProvincePack.readTexture(texturePack, scale, this.iProvinceID);
+                if (bytes != null) {
+                    Pixmap pixmap = ProvincePack.readCim(bytes);
+                    try {
+                        this.provBG = new Image(new Texture(pixmap), TextureFilter.Nearest, TextureWrap.ClampToEdge);
+                    } finally {
+                        pixmap.dispose();
+                    }
+                    return;
                 }
-                if (!texturePackHitLogged) {
-                    texturePackHitLogged = true;
-                    FinalityLogger.info("[Mingsha] Texture pack hit: " + texturePack.path()
-                            + " (scale " + scale + ", province " + this.iProvinceID + ")");
+            } catch (Exception ex) {
+                if (!texturePackErrorLogged) {
+                    texturePackErrorLogged = true;
+                    FinalityLogger.error("[Mingsha] Texture pack read failed; falling back to files", ex);
                 }
-                return;
             }
-        } catch (Exception ex) {
-            FinalityLogger.error("[Mingsha] Texture pack read failed; falling back to files", ex);
         }
 
         try {

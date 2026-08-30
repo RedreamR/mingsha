@@ -14,7 +14,9 @@
     "team.rainfall.ctap_mingsha.MixinProvince",
     "team.rainfall.ctap_mingsha.MixinTouchManager",
     "team.rainfall.mingsha.MixinGame_Scenarios",
-    "team.rainfall.mingsha.sound.MixinSFXManager"
+    "team.rainfall.mingsha.sound.MixinSFXManager",
+    "team.rainfall.mingsha.ns.MixinMenuManager",
+    "team.rainfall.mingsha.ns.MixinCivilization"
   ]
 
 }

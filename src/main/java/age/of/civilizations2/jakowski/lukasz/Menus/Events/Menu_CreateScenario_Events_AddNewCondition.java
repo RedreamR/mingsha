@@ -30,6 +30,7 @@ import age.of.civilizations2.jakowski.lukasz.Event_Conditions_Counter_EqualTo;
 import age.of.civilizations2.jakowski.lukasz.Event_Conditions_Counter_If;
 import age.of.civilizations2.jakowski.lukasz.Event_Conditions_Counter_LessThan;
 import age.of.civilizations2.jakowski.lukasz.Event_Conditions_Counter_MoreThan;
+import age.of.civilizations2.jakowski.lukasz.Event_Conditions_NS_Has;
 import age.of.civilizations2.jakowski.lukasz.Event_Conditions_DecisionTaken;
 import age.of.civilizations2.jakowski.lukasz.Event_Conditions_DefensivePact;
 import age.of.civilizations2.jakowski.lukasz.Event_Conditions_Development;
@@ -117,7 +118,7 @@ public class Menu_CreateScenario_Events_AddNewCondition extends Menu {
       menuElements.add(new Button_Classic_LR_Line(null, -1, 0, tY, CFG.GAMEWIDTH, CFG.BUTTON_H, true));
       tY += menuElements.get(menuElements.size() - 1).getHeightE() + CFG.PADD;
 
-      for (int i = 0; i < 100; i++) {
+      for (int i = 0; i < 101; i++) {
          menuElements.add(new Button_Classic(null, (int)(50.0F * CFG.GUI_SCALE), 0, tY, CFG.GAMEWIDTH, CFG.BUTTON_H, true));
          tY += menuElements.get(menuElements.size() - 1).getHeightE() + CFG.PADD;
       }
@@ -231,6 +232,7 @@ public class Menu_CreateScenario_Events_AddNewCondition extends Menu {
       this.getMenuElem(98).setTextE("Counter <");
       this.getMenuElem(99).setTextE("Counter >");
       this.getMenuElem(100).setTextE("Counter IF (expr)");
+      this.getMenuElem(101).setTextE(CFG.lang.get("NSHas"));
 
       try {
          for (int i = 1; i < this.getMenuElemsSize(); i++) {
@@ -1853,21 +1855,24 @@ public class Menu_CreateScenario_Events_AddNewCondition extends Menu {
                .editViewID();
             break;
          case 97:
-            this.addCounterCondition(new Event_Conditions_Counter_EqualTo());
+            this.addModCondition(new Event_Conditions_Counter_EqualTo());
             break;
          case 98:
-            this.addCounterCondition(new Event_Conditions_Counter_LessThan());
+            this.addModCondition(new Event_Conditions_Counter_LessThan());
             break;
          case 99:
-            this.addCounterCondition(new Event_Conditions_Counter_MoreThan());
+            this.addModCondition(new Event_Conditions_Counter_MoreThan());
             break;
          case 100:
-            this.addCounterCondition(new Event_Conditions_Counter_If());
+            this.addModCondition(new Event_Conditions_Counter_If());
+            break;
+         case 101:
+            this.addModCondition(new Event_Conditions_NS_Has());
             break;
       }
    }
 
-   private final void addCounterCondition(age.of.civilizations2.jakowski.lukasz.Event_Conditions nCondition) {
+   private final void addModCondition(age.of.civilizations2.jakowski.lukasz.Event_Conditions nCondition) {
       CFG.eventsManager.createScenarioEvents.getTrigger(CFG.eventsManager.createEvent_EditTriggerID).lConditions.add(nCondition);
       CFG.eventsManager.createEvent_EditConditionID = CFG.eventsManager
             .createScenarioEvents

@@ -45,6 +45,8 @@ import age.of.civilizations2.jakowski.lukasz.Event_Outcome_MilitaryExpertise;
 import age.of.civilizations2.jakowski.lukasz.Event_Outcome_Money;
 import age.of.civilizations2.jakowski.lukasz.Event_Outcome_MoveCapital;
 import age.of.civilizations2.jakowski.lukasz.Event_Outcome_MovementPoints;
+import age.of.civilizations2.jakowski.lukasz.Event_Outcome_NS_Add;
+import age.of.civilizations2.jakowski.lukasz.Event_Outcome_NS_Remove;
 import age.of.civilizations2.jakowski.lukasz.Event_Outcome_NonAggression;
 import age.of.civilizations2.jakowski.lukasz.Event_Outcome_NukesProvinces;
 import age.of.civilizations2.jakowski.lukasz.Event_Outcome_Occupy;
@@ -95,7 +97,7 @@ public class Menu_CreateScenario_Events_AddNewOutcome extends Menu {
       menuElements.add(new Button_Classic_LR_Line(null, -1, 0, tY, CFG.GAMEWIDTH, CFG.BUTTON_H, true));
       tY += menuElements.get(menuElements.size() - 1).getHeightE() + CFG.PADD;
 
-      for (int i = 1; i < 78; i++) {
+      for (int i = 1; i < 80; i++) {
          menuElements.add(new Button_Classic(null, (int)(50.0F * CFG.GUI_SCALE), 0, tY, CFG.GAMEWIDTH, CFG.BUTTON_H, true));
          tY += menuElements.get(menuElements.size() - 1).getHeightE() + CFG.PADD;
       }
@@ -199,6 +201,8 @@ public class Menu_CreateScenario_Events_AddNewOutcome extends Menu {
       this.getMenuElem(75).setTextE("Counter -");
       this.getMenuElem(76).setTextE("Counter *");
       this.getMenuElem(77).setTextE("Counter /");
+      this.getMenuElem(78).setTextE(CFG.lang.get("NSGain"));
+      this.getMenuElem(79).setTextE(CFG.lang.get("NSLose"));
 
       try {
          for (int i = 1; i < this.getMenuElemsSize(); i++) {
@@ -1071,24 +1075,30 @@ public class Menu_CreateScenario_Events_AddNewOutcome extends Menu {
                .editViewID();
             break;
          case 73:
-            this.addCounterOutcome(new Event_Outcome_Counter_Set());
+            this.addModOutcome(new Event_Outcome_Counter_Set());
             break;
          case 74:
-            this.addCounterOutcome(new Event_Outcome_Counter_Add());
+            this.addModOutcome(new Event_Outcome_Counter_Add());
             break;
          case 75:
-            this.addCounterOutcome(new Event_Outcome_Counter_Sub());
+            this.addModOutcome(new Event_Outcome_Counter_Sub());
             break;
          case 76:
-            this.addCounterOutcome(new Event_Outcome_Counter_Mul());
+            this.addModOutcome(new Event_Outcome_Counter_Mul());
             break;
          case 77:
-            this.addCounterOutcome(new Event_Outcome_Counter_Div());
+            this.addModOutcome(new Event_Outcome_Counter_Div());
+            break;
+         case 78:
+            this.addModOutcome(new Event_Outcome_NS_Add());
+            break;
+         case 79:
+            this.addModOutcome(new Event_Outcome_NS_Remove());
             break;
       }
    }
 
-   private final void addCounterOutcome(age.of.civilizations2.jakowski.lukasz.Event_Outcome nOutcome) {
+   private final void addModOutcome(age.of.civilizations2.jakowski.lukasz.Event_Outcome nOutcome) {
       CFG.eventsManager.createScenarioEvents.lDecisions.get(CFG.eventsManager.createEvent_EditTriggerID).lOutcomes.add(nOutcome);
       CFG.eventsManager.createEvent_EditConditionID = CFG.eventsManager.createScenarioEvents.lDecisions.get(CFG.eventsManager.createEvent_EditTriggerID)
             .lOutcomes

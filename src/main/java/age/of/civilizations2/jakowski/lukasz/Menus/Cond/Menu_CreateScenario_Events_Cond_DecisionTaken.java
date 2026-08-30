@@ -6,6 +6,7 @@ import age.of.civilizations2.jakowski.lukasz.Event_Conditions_Counter_EqualTo;
 import age.of.civilizations2.jakowski.lukasz.Event_Conditions_Counter_If;
 import age.of.civilizations2.jakowski.lukasz.Event_Conditions_Counter_LessThan;
 import age.of.civilizations2.jakowski.lukasz.Event_Conditions_Counter_MoreThan;
+import age.of.civilizations2.jakowski.lukasz.Event_Conditions_NS_Has;
 import age.of.civilizations2.jakowski.lukasz.Event_SelectCivAction;
 import age.of.civilizations2.jakowski.lukasz.Event_Type;
 import age.of.civilizations2.jakowski.lukasz.IMGManager;
@@ -17,6 +18,7 @@ import age.of.civilizations2.jakowski.lukasz.Button.Classic.Button_Classic;
 import age.of.civilizations2.jakowski.lukasz.Button.Classic.Button_Classic_LR_Line;
 import age.of.civilizations2.jakowski.lukasz.Title.TitleM;
 import team.rainfall.mingsha.counter.CounterUI;
+import team.rainfall.mingsha.ns.NSUI;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import java.util.ArrayList;
@@ -28,6 +30,7 @@ public class Menu_CreateScenario_Events_Cond_DecisionTaken extends Menu {
    private String counterTitle = "";
    private String counterTextLabel = "";
    private String counterValueLabel = "";
+   private boolean nsMode = false;
 
    private static final Event_Conditions getCurrentCondition() {
       return CFG.eventsManager
@@ -64,6 +67,8 @@ public class Menu_CreateScenario_Events_Cond_DecisionTaken extends Menu {
          this.counterTextLabel = this.counterHasValue ? "Name: " : "Expr: ";
          this.counterValueLabel = "Value: ";
       }
+
+      this.nsMode = tCond instanceof Event_Conditions_NS_Has;
 
       List<MenuElemUI> menuElements = new ArrayList<>();
       int tY = CFG.PADD;
@@ -119,6 +124,20 @@ public class Menu_CreateScenario_Events_Cond_DecisionTaken extends Menu {
 
          menuElements.add(new Button_Classic("[ Counters ]", (int)(50.0F * CFG.GUI_SCALE), 0, tY, CFG.GAMEWIDTH, CFG.BUTTON_H, true));
          tY += menuElements.get(menuElements.size() - 1).getHeightE() + CFG.PADD;
+      } else if (this.nsMode) {
+         menuElements.add(
+            new Button_Classic(tCond.getText(), (int)(50.0F * CFG.GUI_SCALE), 0, tY, CFG.GAMEWIDTH, CFG.BUTTON_H, true) {
+               @Override
+               public String getTextToDrawElem() {
+                  return "Spirit: " + super.getTextToDrawElem();
+               }
+            }
+         );
+         tY += menuElements.get(menuElements.size() - 1).getHeightE() + CFG.PADD;
+         menuElements.add(
+            new Button_Classic("[ National Spirits ]", (int)(50.0F * CFG.GUI_SCALE), 0, tY, CFG.GAMEWIDTH, CFG.BUTTON_H, true)
+         );
+         tY += menuElements.get(menuElements.size() - 1).getHeightE() + CFG.PADD;
       } else {
          menuElements.add(new Button_Classic(null, (int)(50.0F * CFG.GUI_SCALE), 0, tY, CFG.GAMEWIDTH, CFG.BUTTON_H, true));
          tY += menuElements.get(menuElements.size() - 1).getHeightE() + CFG.PADD;
@@ -150,6 +169,11 @@ public class Menu_CreateScenario_Events_Cond_DecisionTaken extends Menu {
 
       if (this.counterMode) {
          this.getTitleM().setText(this.counterTitle);
+         return;
+      }
+
+      if (this.nsMode) {
+         this.getTitleM().setText(CFG.lang.get("NSSelectTitle"));
          return;
       }
 
@@ -239,9 +263,46 @@ public class Menu_CreateScenario_Events_Cond_DecisionTaken extends Menu {
       }
    }
 
+   /** Writes the spirit id back into the condition. It carries no value field. */
+   private final void saveNSData() {
+      try {
+         getCurrentCondition().setText(this.getMenuElem(5).getTextE() == null ? "" : this.getMenuElem(5).getTextE().trim());
+      } catch (IndexOutOfBoundsException var2) {
+      }
+   }
+
    @Override
    public final void actionEL(int iID) {
-      if (this.counterMode) {
+      if (this.nsMode) {
+         switch (iID) {
+            case 0:
+               this.saveNSData();
+               this.onBackPressed();
+               break;
+            case 1:
+               getCurrentCondition().conditionType = Event_Type.AND;
+               CFG.toastM.addM(this.getMenuElem(iID).getTextE(), CFG.COLOR_HOVER_TITLE);
+               break;
+            case 2:
+               getCurrentCondition().conditionType = Event_Type.NOT;
+               CFG.toastM.addM(this.getMenuElem(iID).getTextE(), CFG.COLOR_HOVER_TITLE);
+               break;
+            case 3:
+               getCurrentCondition().conditionType = Event_Type.OR;
+               CFG.toastM.addM(this.getMenuElem(iID).getTextE(), CFG.COLOR_HOVER_TITLE);
+               break;
+            case 4:
+               this.saveNSData();
+               CFG.eventsManager.eSelectCivAction = Event_SelectCivAction.COND_SELECTCIV_DECISIONTAKEN;
+               CFG.menus.setMenuID(View.eCREATE_SCENARIO_EVENTS_SELECT_CIV);
+               break;
+            case 5:
+               CFG.showKeyboard();
+               break;
+            case 6:
+               this.openNSPicker();
+         }
+      } else if (this.counterMode) {
          switch (iID) {
             case 0:
                this.saveCounterData();
@@ -301,6 +362,20 @@ public class Menu_CreateScenario_Events_Cond_DecisionTaken extends Menu {
                CFG.menus.setMenuID(View.eCREATE_SCENARIO_EVENTS_SELECTDECISION);
          }
       }
+   }
+
+   /**
+    * Hands over to the national spirit list in picking mode. The list is a view
+    * {@code MixinMenuManager} creates on demand, so the {@code View} passed to
+    * {@code setMenuID} is only what the request falls back to.
+    */
+   private final void openNSPicker() {
+      this.saveNSData();
+      NSUI.mode = NSUI.MODE_PICK_COND;
+      NSUI.filter = "";
+      NSUI.returnView = View.eCREATE_SCENARIO_EVENTS_COND_DECISIONTAKEN;
+      NSUI.requestView(NSUI.REQ_LIST);
+      CFG.menus.setMenuID(View.eCREATE_SCENARIO_EVENTS_COND_DECISIONTAKEN);
    }
 
    private final void openCounterPicker() {

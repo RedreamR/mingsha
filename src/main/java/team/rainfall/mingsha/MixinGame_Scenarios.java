@@ -8,6 +8,7 @@ import age.of.civilizations2.jakowski.lukasz.Menus.Menu_InitGame;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
 import team.rainfall.finality.luminosity2.annotations.Mixin;
+import team.rainfall.mingsha.ns.NSPresets;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -52,6 +53,17 @@ public class MixinGame_Scenarios {
                     CFG.exceptionStack(ex);
                 }
             }
+        } catch (Exception ex) {
+            CFG.exceptionStack(ex);
+        }
+
+        // The scenario's starting national spirits live in a hidden event, so they can
+        // only be handed out once the events above are in memory. loadCivilizations()
+        // has just rebuilt every civGD from scratch, which makes this the scenario
+        // start; loading a saved game restores the entries from the save instead and
+        // never comes through here.
+        try {
+            NSPresets.apply();
         } catch (Exception ex) {
             CFG.exceptionStack(ex);
         }

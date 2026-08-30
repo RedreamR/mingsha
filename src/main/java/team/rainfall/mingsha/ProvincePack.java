@@ -32,13 +32,19 @@ public final class ProvincePack {
     }
 
     public static byte[] read(FileHandle packFile, int provinceId) throws IOException {
-        if (packFile == null || !packFile.exists()) {
+        if (packFile == null) {
             return null;
         }
         String key = packFile.path();
         Reader reader = CACHE.get(key);
         if (reader == null) {
-            reader = new Reader(packFile.readBytes());
+            // Remember a broken pack too, or every province would re-read and re-parse the whole file.
+            try {
+                reader = new Reader(packFile.readBytes());
+            } catch (RuntimeException | IOException ex) {
+                CACHE.putIfAbsent(key, Reader.UNUSABLE);
+                throw ex;
+            }
             Reader previous = CACHE.putIfAbsent(key, reader);
             if (previous != null) {
                 reader = previous;
@@ -50,17 +56,23 @@ public final class ProvincePack {
     public static void clearCache() {
         CACHE.clear();
         TEXTURE_CACHE.clear();
+        PackLocator.clearCache();
     }
 
     /** Reads one CIM texture from a Mingsha texture pack. */
     public static byte[] readTexture(FileHandle packFile, int scale, int provinceId) throws IOException {
-        if (packFile == null || !packFile.exists()) {
+        if (packFile == null) {
             return null;
         }
         String key = packFile.path();
         TextureReader reader = TEXTURE_CACHE.get(key);
         if (reader == null) {
-            reader = new TextureReader(packFile.readBytes());
+            try {
+                reader = new TextureReader(packFile.readBytes());
+            } catch (RuntimeException | IOException ex) {
+                TEXTURE_CACHE.putIfAbsent(key, TextureReader.UNUSABLE);
+                throw ex;
+            }
             TextureReader previous = TEXTURE_CACHE.putIfAbsent(key, reader);
             if (previous != null) {
                 reader = previous;
@@ -224,8 +236,15 @@ public final class ProvincePack {
     }
 
     private static final class TextureReader {
+        /** Stands in for a pack that failed to parse, so the failure is only paid for once. */
+        private static final TextureReader UNUSABLE = new TextureReader();
+
         private final byte[] data;
         private final Map<Long, TextureIndex> index = new ConcurrentHashMap<>();
+
+        private TextureReader() {
+            this.data = new byte[0];
+        }
 
         private TextureReader(byte[] data) throws IOException {
             this.data = data;
@@ -318,8 +337,15 @@ public final class ProvincePack {
     }
 
     private static final class Reader {
+        /** Stands in for a pack that failed to parse, so the failure is only paid for once. */
+        private static final Reader UNUSABLE = new Reader();
+
         private final byte[] data;
         private final Map<Integer, Index> index = new ConcurrentHashMap<>();
+
+        private Reader() {
+            this.data = new byte[0];
+        }
 
         private Reader(byte[] data) throws IOException {
             this.data = data;

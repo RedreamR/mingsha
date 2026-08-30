@@ -25,6 +25,7 @@ import age.of.civilizations2.jakowski.lukasz.MenuE_HoverP.ME_Hover_v2;
 import age.of.civilizations2.jakowski.lukasz.Menus.Budget.Menu_InGame_FA_Top;
 import age.of.civilizations2.jakowski.lukasz.Sliders.Slider;
 import team.rainfall.mingsha.counter.CounterUI;
+import team.rainfall.mingsha.ns.NSUI;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import java.util.ArrayList;
@@ -821,6 +822,9 @@ public class Menu_CreateScenario_Settings extends Menu {
       menuElements.add(
          new Button_Classic(null, (int)(50.0F * CFG.GUI_SCALE), 0, CFG.BUTTON_H * 21 + CFG.PADD * 22, Menu_InGame_FA_Top.getWindowWidth(), CFG.BUTTON_H, true)
       );
+      menuElements.add(
+         new Button_Classic(null, (int)(50.0F * CFG.GUI_SCALE), 0, CFG.BUTTON_H * 22 + CFG.PADD * 23, Menu_InGame_FA_Top.getWindowWidth(), CFG.BUTTON_H, true)
+      );
       this.initMenu(
          null, 0 + AoCGame.LEFT, CFG.BUTTON_H + CFG.PADD * 2, Menu_InGame_FA_Top.getWindowWidth(), CFG.GAMEHEIGHT - (CFG.BUTTON_H + CFG.PADD * 2), menuElements
       );
@@ -874,6 +878,9 @@ public class Menu_CreateScenario_Settings extends Menu {
       this.getMenuElem(31).setTextE(CFG.lang.get("EconomyGrowthModifier") + ": ");
       this.getMenuElem(34).setTextE(CFG.lang.get("DiseasesDeathRate") + ": ");
       this.getMenuElem(36).setTextE("Counters");
+      // The catalogue itself is global and lives in the game editor; only which
+      // civilization starts with what is a property of this scenario.
+      this.getMenuElem(37).setTextE(CFG.lang.get("NSStartingTitle"));
    }
 
    @Override
@@ -1320,6 +1327,13 @@ public class Menu_CreateScenario_Settings extends Menu {
             CounterUI.mode = CounterUI.MODE_MANAGER;
             CounterUI.returnView = View.eCREATE_SCENARIO_SETTINGS;
             CFG.menus.setMenuID(View.eCREATE_SCENARIO_EVENTS_SELECTDECISION);
+            return;
+         case 37:
+            CFG.menus.saveCreateScenarioSettings_Data();
+            NSUI.reset();
+            NSUI.returnView = View.eCREATE_SCENARIO_SETTINGS;
+            NSUI.requestView(NSUI.REQ_PRESETS);
+            CFG.menus.setMenuID(View.eCREATE_SCENARIO_SETTINGS);
             return;
       }
    }

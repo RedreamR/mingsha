@@ -8,6 +8,8 @@ import age.of.civilizations2.jakowski.lukasz.Event_Outcome_Counter_Div;
 import age.of.civilizations2.jakowski.lukasz.Event_Outcome_Counter_Mul;
 import age.of.civilizations2.jakowski.lukasz.Event_Outcome_Counter_Set;
 import age.of.civilizations2.jakowski.lukasz.Event_Outcome_Counter_Sub;
+import age.of.civilizations2.jakowski.lukasz.Event_Outcome_NS_Add;
+import age.of.civilizations2.jakowski.lukasz.Event_Outcome_NS_Remove;
 import age.of.civilizations2.jakowski.lukasz.Event_SelectCivAction;
 import age.of.civilizations2.jakowski.lukasz.IMGManager;
 import age.of.civilizations2.jakowski.lukasz.Images;
@@ -18,6 +20,7 @@ import age.of.civilizations2.jakowski.lukasz.Button.Classic.Button_Classic;
 import age.of.civilizations2.jakowski.lukasz.Button.Classic.Button_Classic_LR_Line;
 import age.of.civilizations2.jakowski.lukasz.Title.TitleM;
 import team.rainfall.mingsha.counter.CounterUI;
+import team.rainfall.mingsha.ns.NSUI;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,6 +33,12 @@ public class Menu_CreateScenario_Events_Out_RenameCiv extends Menu {
    private String counterTitle = "";
    private String counterNameLabel = "Name: ";
    private String counterValueLabel = "";
+   private boolean nsMode = false;
+   /** Only the granting outcome carries a duration, so only it gets the turns row. */
+   private boolean nsHasTurns = false;
+   private String nsTitle = "";
+   /** Element index of the "[ National Spirits ]" row, which moves with the turns row. */
+   private int nsPickerElemID = 3;
 
    private static final Event_Outcome getCurrentOutcome() {
       return CFG.eventsManager
@@ -79,6 +88,13 @@ public class Menu_CreateScenario_Events_Out_RenameCiv extends Menu {
          }
       }
 
+      this.nsMode = tOutcome instanceof Event_Outcome_NS_Add || tOutcome instanceof Event_Outcome_NS_Remove;
+      if (this.nsMode) {
+         this.nsHasTurns = tOutcome instanceof Event_Outcome_NS_Add;
+         this.nsTitle = this.nsHasTurns ? CFG.lang.get("NSGain") : CFG.lang.get("NSLose");
+         this.nsPickerElemID = this.nsHasTurns ? 4 : 3;
+      }
+
       List<MenuElemUI> menuElements = new ArrayList<>();
       int tY = CFG.PADD;
       menuElements.add(new Button_Classic_LR_Line(null, -1, 0, tY, CFG.GAMEWIDTH, CFG.BUTTON_H, true));
@@ -121,6 +137,34 @@ public class Menu_CreateScenario_Events_Out_RenameCiv extends Menu {
          );
          tY += menuElements.get(menuElements.size() - 1).getHeightE() + CFG.PADD;
          menuElements.add(new Button_Classic("[ Counters ]", (int)(50.0F * CFG.GUI_SCALE), 0, tY, CFG.GAMEWIDTH, CFG.BUTTON_H, true));
+         tY += menuElements.get(menuElements.size() - 1).getHeightE() + CFG.PADD;
+      } else if (this.nsMode) {
+         menuElements.add(
+            new Button_Classic(tOutcome.getText(), (int)(50.0F * CFG.GUI_SCALE), 0, tY, CFG.GAMEWIDTH, CFG.BUTTON_H, true) {
+               @Override
+               public String getTextToDrawElem() {
+                  return "Spirit: " + super.getTextToDrawElem();
+               }
+            }
+         );
+         tY += menuElements.get(menuElements.size() - 1).getHeightE() + CFG.PADD;
+         if (this.nsHasTurns) {
+            menuElements.add(
+               new Button_Classic(
+                  String.valueOf(tOutcome.getValue()), (int)(50.0F * CFG.GUI_SCALE), 0, tY, CFG.GAMEWIDTH, CFG.BUTTON_H, true
+               ) {
+                  @Override
+                  public String getTextToDrawElem() {
+                     return CFG.lang.get("Turns") + " (0 = default, -1 = permanent): " + super.getTextToDrawElem();
+                  }
+               }
+            );
+            tY += menuElements.get(menuElements.size() - 1).getHeightE() + CFG.PADD;
+         }
+
+         menuElements.add(
+            new Button_Classic("[ National Spirits ]", (int)(50.0F * CFG.GUI_SCALE), 0, tY, CFG.GAMEWIDTH, CFG.BUTTON_H, true)
+         );
          tY += menuElements.get(menuElements.size() - 1).getHeightE() + CFG.PADD;
       } else {
          menuElements.add(
@@ -167,7 +211,7 @@ public class Menu_CreateScenario_Events_Out_RenameCiv extends Menu {
          .setText(
             this.counterMode
                ? this.counterTitle
-               : CFG.lang.get("CivilizationName")
+               : (this.nsMode ? this.nsTitle : CFG.lang.get("CivilizationName"))
          );
    }
 
@@ -243,9 +287,55 @@ public class Menu_CreateScenario_Events_Out_RenameCiv extends Menu {
       }
    }
 
+   /**
+    * Writes the spirit id and — for the granting outcome — the turn override back
+    * into the outcome. An unparseable turn count is left at whatever the outcome
+    * already held rather than silently becoming 0, which would mean something else.
+    */
+   private final void saveNSData() {
+      try {
+         Event_Outcome tOutcome = getCurrentOutcome();
+         tOutcome.setText(this.getMenuElem(2).getTextE() == null ? "" : this.getMenuElem(2).getTextE().trim());
+         if (this.nsHasTurns) {
+            String tTurns = this.getMenuElem(3).getTextE() == null ? "" : this.getMenuElem(3).getTextE().trim();
+
+            try {
+               tOutcome.setValue(Integer.parseInt(tTurns));
+            } catch (NumberFormatException var5) {
+            }
+         }
+      } catch (IndexOutOfBoundsException var6) {
+      }
+   }
+
    @Override
    public final void actionEL(int iID) {
-      if (this.counterMode) {
+      if (this.nsMode) {
+         if (iID == this.nsPickerElemID) {
+            this.saveNSData();
+            NSUI.mode = NSUI.MODE_PICK_OUT;
+            NSUI.filter = "";
+            NSUI.returnView = View.eCREATE_SCENARIO_EVENTS_OUT_RENAME_CIV;
+            NSUI.requestView(NSUI.REQ_LIST);
+            CFG.menus.setMenuID(View.eCREATE_SCENARIO_EVENTS_OUT_RENAME_CIV);
+            return;
+         }
+
+         switch (iID) {
+            case 0:
+               this.saveNSData();
+               this.onBackPressed();
+               break;
+            case 1:
+               this.saveNSData();
+               CFG.eventsManager.eSelectCivAction = Event_SelectCivAction.OUT_SELECTCIV_RENAMECIV;
+               CFG.menus.setMenuID(View.eCREATE_SCENARIO_EVENTS_SELECT_CIV);
+               break;
+            case 2:
+            case 3:
+               CFG.showKeyboard();
+         }
+      } else if (this.counterMode) {
          switch (iID) {
             case 0:
                this.saveCounterData();

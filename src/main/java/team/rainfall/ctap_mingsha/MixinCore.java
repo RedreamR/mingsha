@@ -17,6 +17,7 @@ import team.rainfall.finality.luminosity2.annotations.Mixin;
 import team.rainfall.finality.luminosity2.annotations.Setter;
 import team.rainfall.finality.luminosity2.annotations.Shadow;
 import team.rainfall.finality.FinalityLogger;
+import team.rainfall.mingsha.PackLocator;
 import team.rainfall.mingsha.ProvincePack;
 
 import java.io.IOException;
@@ -27,35 +28,28 @@ public class MixinCore {
     @Shadow
     private List<Province> lProvs = null;
     private static boolean missingProvinceWarningLogged;
-    private static String provincePackStatusPath;
-    private static boolean provincePackHitLogged;
+    private static boolean provincePackErrorLogged;
 
     /** Load province data from the Mingsha pack, then fall back to legacy files. */
     public final void loadProvince(int provinceId) {
         String base = "map/" + CFG.map.getFileActiveMapPath() + "data/";
-        try {
-            FileHandle pack = FileManager.loadFile(base + "provinces.pack");
-            if (pack.exists() && !pack.path().equals(provincePackStatusPath)) {
-                provincePackStatusPath = pack.path();
-                provincePackHitLogged = false;
-                FinalityLogger.info("[Mingsha] Province pack found: " + pack.path());
-            }
-            byte[] bytes = ProvincePack.read(pack, provinceId);
-            if (bytes != null) {
-                if (!provincePackHitLogged) {
-                    provincePackHitLogged = true;
-                    FinalityLogger.info("[Mingsha] Province pack hit: " + pack.path()
-                            + " (province " + provinceId + ")");
+        FileHandle pack = PackLocator.find(base + "provinces.pack");
+        if (pack != null) {
+            try {
+                byte[] bytes = ProvincePack.read(pack, provinceId);
+                if (bytes != null) {
+                    lProvs.add(new Province(provinceId, (Province_GameData2) CFG.deserialize(bytes)));
+                    return;
                 }
-                lProvs.add(new Province(provinceId, (Province_GameData2) CFG.deserialize(bytes)));
-                return;
-            }
-        } catch (Exception ex) {
-            FinalityLogger.error("[Mingsha] Province pack read failed; falling back to files", ex);
-            // A corrupt or incompatible pack must not make old maps unloadable.
-            if (CFG.LOGs && !missingProvinceWarningLogged) {
-                missingProvinceWarningLogged = true;
-                CFG.exceptionStack(ex);
+            } catch (Exception ex) {
+                // A corrupt or incompatible pack must not make old maps unloadable.
+                if (!provincePackErrorLogged) {
+                    provincePackErrorLogged = true;
+                    FinalityLogger.error("[Mingsha] Province pack read failed; falling back to files", ex);
+                    if (CFG.LOGs) {
+                        CFG.exceptionStack(ex);
+                    }
+                }
             }
         }
 
